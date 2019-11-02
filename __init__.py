@@ -11,6 +11,8 @@ from homeassistant.helpers.event import async_track_time_interval
 
 from bs4 import BeautifulSoup
 
+import json as JSON
+
 # Setting log
 _LOGGER = logging.getLogger('ho_mobile_account_init')
 _LOGGER.setLevel(logging.DEBUG)
@@ -71,17 +73,7 @@ class HoMobilePlatform:
         self._password = config[DOMAIN][CONF_PASSWORD]
         self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
 
-        self._credit = {
-            'voice': {'value': 0, 'icon': 'mdi:phone', 'uom': 's'},
-            'voice_max': {'value': None, 'icon': 'mdi:phone', 'uom': 's'},
-            'sms': {'value': 0, 'icon': 'mdi:message-text', 'uom': 'SMS'},
-            'sms_max': {'value': None, 'icon': 'mdi:message-text', 'uom': 'SMS'},
-            'mms': {'value': 0, 'icon': 'mdi:message-image', 'uom': 'MMS'},
-            'mms_max': {'value': None, 'icon': 'mdi:message-image', 'uom': 'MMS'},
-            'data': {'value': 0, 'icon': 'mdi:web', 'uom': 'GB'},
-            'data_max': {'value': None, 'icon': 'mdi:web', 'uom': 'GB'},
-            'renewal': {'value': None, 'icon': 'mdi:clock-outline', 'uom': ''},
-        }
+        self._credit = {}
 
         # login and fetch data
         hass.async_create_task(self.async_update_credits())
@@ -135,81 +127,208 @@ class HoMobilePlatform:
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
+        # --------------------------------------------------------------------------------------------------------------
+        #   FASE 1 - Caricamento della homepage
+        # --------------------------------------------------------------------------------------------------------------
+
         # login url
-        url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/checkAccount'
+        url = 'https://www.ho-mobile.it/'
 
         # enable coockie
-        session.post(url)
+        response = session.get(url)
 
-        # set POST https params
-        params = {"email":null,"phoneNumber":self._username,"channel":"WEB"}
-
-        # get response to POST request
-        response = session.post(url, params=params)
         # get http status code
         http_status_code = response.status_code
+
         # check response is okay
         if http_status_code != 200:
 
             _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
 
-        else:
             # get html in bytes
-            content = response.content
-            _LOGGER.debug(response.text)
-            # generate soup object
-            soup = BeautifulSoup(content, 'html.parser')
-            # end offerta
-            div_class = "end_offerta"
-            divs = soup.findAll("div", {"class": div_class})
-            _LOGGER.debug('Found ' + str(len(divs)) + ' divs having class ' + div_class)
-            if len(divs) == 1:
-                renewal_str = divs[0].text.strip()
-                renewal_datetime = HoMobilePlatform._get_renewal_datetime_from_str(renewal_str)
-                self._credit['renewal']['value'] = renewal_datetime
-                _LOGGER.info('HoMobile account renewal: '+str(renewal_datetime))
-            # find div tags having class conso__text
-            div_class = "conso__text"
-            divs = soup.findAll("div", {"class": div_class})
-            _LOGGER.debug('Found '+str(len(divs))+' divs having class '+div_class)
-            for div in divs:
-                # find span tags having class red
-                span_class = "red"
-                spans = div.findAll("span", {"class": span_class})
-                _LOGGER.debug('Found ' + str(len(spans)) + ' spans having class ' + span_class)
-                for span in spans:
-                    text = span.text
-                    if text[-1:] == 's':
-                        # voice seconds
-                        self._credit['voice']['value'] = int(text[:-1])
-                        max = HoMobilePlatform._get_max(div)
-                        if max is not None:
-                            self._credit['voice_max']['value'] = int(max[:-1])
-                    elif text[-2:] == 'GB':
-                        # GB of data
-                        GB = text[:-2].replace(',', '.')
-                        self._credit['data']['value'] = float(GB)
-                        max = HoMobilePlatform._get_max(div)
-                        if max is not None:
-                            self._credit['data_max']['value'] = float(max[:-2].replace(',', '.'))
-                    elif text[-3:] == 'SMS':
-                        # sms
-                        self._credit['sms']['value'] = int(text[:-3].strip())
-                        max = HoMobilePlatform._get_max(div)
-                        if max is not None:
-                            self._credit['sms_max']['value'] = int(max[:-3].strip())
-                    elif text[-3:] == 'MMS':
-                        # sms
-                        self._credit['mms']['value'] = int(text[:-3].strip())
-                        max = HoMobilePlatform._get_max(div)
-                        if max is not None:
-                            self._credit['mms_max']['value'] = int(max[:-3].strip())
+            _LOGGER.debug(str(response.content))
 
-            for k, v in self._credit.items():
-                if v['value'] is not None:
-                    _LOGGER.info(k+': '+str(v['value']))
-                    attributes = {"icon": v['icon'], 'unit_of_measurement': v['uom']}
-                    self._hass.states.async_set(DOMAIN + "." + OBJECT_ID_CREDIT + "_" + k, v['value'], attributes)
-            return True
+        else:
+
+            # ----------------------------------------------------------------------------------------------------------
+            #   FASE 2 - Inserimento del numero di telefono
+            # ----------------------------------------------------------------------------------------------------------
+
+            # login url
+            url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/checkAccount'
+
+            # set POST https params
+            json = {
+                'email': None,
+                'phoneNumber':self._username,
+                'channel':'WEB'}
+            headers = {
+                'Referer':'https://www.ho-mobile.it/',
+                'Content-Type':'application/json'}
+
+            # get response to POST request
+            response = session.post(url, json=json, headers=headers)
+            # get http status code
+            http_status_code = response.status_code
+            # check response is okay
+            if http_status_code != 200:
+
+                _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+
+                # get html in bytes
+                _LOGGER.debug(str(response.content))
+
+            else:
+                # get html in bytes
+                json_str = response.text
+                #_LOGGER.debug(json_str)
+                json = JSON.loads(json_str)
+                #_LOGGER.debug(str(json))
+                _LOGGER.debug('Status is ' + json['operationStatus']['status'])
+
+                if json['operationStatus']['status'] == 'OK':
+
+                    # --------------------------------------------------------------------------------------------------
+                    #   FASE 2 - Inserimento della password
+                    # --------------------------------------------------------------------------------------------------
+
+                    accountId = json['accountId']
+
+                    # login url
+                    url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/login'
+
+                    # set POST https params
+                    json = {
+                        'accountId': accountId,
+                        'email': None,
+                        'phoneNumber': self._username,
+                        'password': self._password,
+                        'channel': "WEB",
+                        'isRememberMe': False}
+
+                    headers = {
+                        'Referer': 'https://www.ho-mobile.it/',
+                        'Content-Type': 'application/json'}
+
+                    # get response to POST request
+                    response = session.post(url, json=json, headers=headers)
+
+                    # get http status code
+                    http_status_code = response.status_code
+
+                    # check response is okay
+                    if http_status_code != 200:
+
+                        _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+
+                        # get html in bytes
+                        _LOGGER.debug(str(response.content))
+
+                    else:
+                        # get html in bytes
+                        _LOGGER.debug('Username e password inseriti CORRETTAMENTE')
+
+                        # --------------------------------------------------------------------------------------------------
+                        #   FASE 3 - Recupero del productId
+                        # --------------------------------------------------------------------------------------------------
+
+                        # login url
+                        url = 'https://www.ho-mobile.it/leanfe/restAPI/CatalogInfoactivationService/getCatalogInfoactivation'
+
+                        # set POST https params
+                        json = {
+                            "channel":"WEB",
+                            "phoneNumber":self._username}
+
+                        headers = {
+                            'Referer': 'https://www.ho-mobile.it/',
+                            'Content-Type': 'application/json'}
+
+                        # get response to POST request
+                        response = session.post(url, json=json, headers=headers)
+
+                        # get http status code
+                        http_status_code = response.status_code
+
+                        # check response is okay
+                        if http_status_code != 200:
+
+                            _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+
+                            # get html in bytes
+                            _LOGGER.debug(str(response.content))
+
+                        else:
+
+                            json_str = response.text
+                            #_LOGGER.debug(json_str)
+                            json = JSON.loads(json_str)
+
+                            productId = json['activeOffer']['productList'][0]['productId']
+
+                            # --------------------------------------------------------------------------------------------------
+                            #   FASE 4 - Recupero dei contatori
+                            # --------------------------------------------------------------------------------------------------
+
+                            # login url
+                            url = 'https://www.ho-mobile.it/leanfe/restAPI/CountersService/getCounters'
+
+                            # set POST https params
+                            json = {
+                                "channel": "WEB",
+                                "phoneNumber": self._username,
+                                "productId": productId}
+
+                            headers = {
+                                'Referer': 'https://www.ho-mobile.it/',
+                                'Content-Type': 'application/json'}
+
+                            # get response to POST request
+                            response = session.post(url, json=json, headers=headers)
+
+                            # get http status code
+                            http_status_code = response.status_code
+
+                            # check response is okay
+                            if http_status_code != 200:
+
+                                _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+
+                                # get html in bytes
+                                _LOGGER.debug(str(response.content))
+
+                            else:
+
+                                json_str = response.text
+                                #_LOGGER.debug(json_str)
+
+                                json = JSON.loads(json_str)
+
+                                for item in json['countersList'][0]['countersDetailsList']:
+                                    uom = item['residualUnit']
+                                    if uom == 'GB':
+
+                                        key = 'internet'
+                                        value = item['residual']
+                                        icon = 'mdi:web'
+                                        self._credit[key] = {
+                                            'value': value,
+                                            'icon': icon,
+                                            'uom': uom}
+
+                                        key = 'renewal'
+                                        value = item['nextResetDate']
+                                        icon = 'mdi:calendar-clock'
+                                        self._credit[key] = {
+                                            'value': value,
+                                            'icon': icon,
+                                            'uom': ''}
+
+                                for k, v in self._credit.items():
+                                    if v['value'] is not None:
+                                        _LOGGER.info(k + ': ' + str(v['value']))
+                                        attributes = {"icon": v['icon'], 'unit_of_measurement': v['uom']}
+                                        self._hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
+                                return True
 
         return False
