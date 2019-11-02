@@ -1,0 +1,8 @@
+{
+  "domain": "ho-mobile_account",
+  "name": "ho-mobile",
+  "documentation": "https://github.com/vincenzosuraci/ho_mobile_account",
+  "dependencies": [],
+  "codeowners": ["@vincenzosuraci"],
+  "requirements": ["beautifulsoup4"]
+}
