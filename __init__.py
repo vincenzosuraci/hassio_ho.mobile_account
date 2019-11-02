@@ -316,7 +316,15 @@ class HoMobilePlatform:
                                             'icon': icon,
                                             'uom': uom}
 
-                                        key = 'renewal'
+                                        key = 'internet_threshold'
+                                        value = item['threshold']
+                                        icon = 'mdi:web'
+                                        self._credit[key] = {
+                                            'value': value,
+                                            'icon': icon,
+                                            'uom': uom}
+
+                                        key = 'internet_renewal'
                                         value = item['nextResetDate']
                                         icon = 'mdi:calendar-clock'
                                         self._credit[key] = {
