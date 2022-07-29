@@ -6,6 +6,6 @@
   "documentation": "https://github.com/vincenzosuraci/ho_mobile_account",
   "dependencies": [],
   "codeowners": ["@vincenzosuraci"],
-  "requirements": ["aiohttp"],
+  "requirements": [],
   "iot_class": "cloud_polling"
 }

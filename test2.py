@@ -1,16 +1,13 @@
-from threading import Thread
-
-import datetime
 from datetime import timedelta
 import logging
+import sys
+
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 import requests
+import asyncio
 
-import voluptuous as vol
-
-from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL)
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.event import async_track_time_interval
+from threading import Thread
 
 import json as JSON
 
@@ -30,111 +27,30 @@ CONF_PHONE_NUMBER = 'phone_number'
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=900)
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_PHONE_NUMBER): cv.string,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
-    })
-}, extra=vol.ALLOW_EXTRA)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# ASYNC SETUP
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-async def async_setup(hass, config):
-
-    _LOGGER.debug('async_setup() >>> STARTED')
-
-    # create the HoMobile Platform object
-    hass.data[DOMAIN] = HoMobilePlatform(hass, config)
-
-    _LOGGER.debug('async_setup() <<< TERMINATED')
-
-    return True
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# HO.MOBILE PLATFORM
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-
 class HoMobilePlatform:
 
-    def __init__(self, hass, config):
-
-        self._hass = hass
-        self._config = config
-
-        self._phoneNumber = config[DOMAIN][CONF_PHONE_NUMBER]
-        self._password = config[DOMAIN][CONF_PASSWORD]
-        self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
+    def __init__(self):
+        self._phoneNumber = '3519271620'
+        self._password = '58J%u#krw97WDy!W'
 
         self._credit = {}
 
-        # login and fetch data
-        hass.async_create_task(self.async_update_credits())
-
-        # starting timers
-        hass.async_create_task(self.async_start_timer())
-
-    async def async_start_timer(self):
-
-        # This is used to update the status periodically
-        _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
-        async_track_time_interval(
-            self._hass,
-            self.async_update_credits(),
-            self.update_status_interval
-        )
-
-        return True
-
-    @staticmethod
-    def _get_max(elem):
-        for content in elem.contents:
-            content = str(content).strip()
-            if content[:1] == '/':
-                return content[1:].strip()
-        return None
-
-    @staticmethod
-    def _get_renewal_datetime_from_str(renewal_str):
-        index = renewal_str.find(':')
-        _LOGGER.debug('looking for ":", index: ' + str(index))
-        if index >= 0:
-            H = int(renewal_str[index-2:index])
-            i = int(renewal_str[index+1:index+3])
-            _LOGGER.debug('time: ' + str(H) + ':' + str(i))
-            index = renewal_str.find('/')
-            _LOGGER.debug('looking for "/", index: ' + str(index))
-            if index >= 0:
-                d = int(renewal_str[index-2:index])
-                m = int(renewal_str[index+1:index+3])
-                Y = int(renewal_str[index+4:index+8])
-                _LOGGER.debug('date: ' + str(d) + '/' + str(m) + '/' + str(Y))
-                dt = datetime.datetime.combine(datetime.date(Y, m, d), datetime.time(H, i))
-                _LOGGER.info('renewal datetime: ' + str(dt))
-                return dt
-
-        return renewal_str
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.async_update_credits())
 
     async def async_update_credits(self):
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
-        new_thread = Thread(target=HoMobilePlatform.thread_update_credits, args=(self._phoneNumber, self._password, self._credit, self._hass))
+        new_thread = Thread(target=HoMobilePlatform.thread_update_credits, args=(self._phoneNumber, self._password, self._credit))
 
         new_thread.start()
 
         new_thread.join()
 
-    def thread_update_credits(phoneNumber, password, credit, hass):
+        return False
+
+    def thread_update_credits(phoneNumber, password, credit):
 
         # --------------------------------------------------------------------------------------------------------------
         #   FASE 1 - Caricamento della homepage
@@ -355,4 +271,7 @@ class HoMobilePlatform:
                                         _LOGGER.info(k + ': ' + str(v['value']))
                                         attributes = {"icon": v['icon'],
                                                       'unit_of_measurement': v['uom']}
-                                        hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
+                                        #hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
+
+
+HMP = HoMobilePlatform()
