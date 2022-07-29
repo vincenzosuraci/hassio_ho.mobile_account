@@ -84,11 +84,13 @@ class HoMobilePlatform:
 
     async def async_start_timer(self):
 
-        # This is used to update the Meross Devices status periodically
+        # This is used to update the status periodically
         _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
-        async_track_time_interval(self._hass,
-                                  self.async_update_credits,
-                                  self.update_status_interval)
+        async_track_time_interval(
+            self._hass,
+            self.async_update_credits,
+            self.update_status_interval
+        )
 
         return True
 
