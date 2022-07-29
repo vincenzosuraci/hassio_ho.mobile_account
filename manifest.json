@@ -1,8 +1,11 @@
 {
-  "domain": "ho-mobile_account",
-  "name": "ho-mobile",
+  "domain": "ho_mobile_account",
+  "name": "Ho.mobile Crawler",
+  "version": "1.0.0",
+  "homeassistant": "2022.4.0",
   "documentation": "https://github.com/vincenzosuraci/ho_mobile_account",
   "dependencies": [],
   "codeowners": ["@vincenzosuraci"],
-  "requirements": ["beautifulsoup4","selenium"]
+  "requirements": ["aiohttp"],
+  "iot_class": "cloud_polling"
 }

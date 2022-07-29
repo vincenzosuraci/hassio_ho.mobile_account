@@ -1,17 +1,20 @@
 import os
-
+# Questo wokaround funziona sul PC ma non in Home Assistant
 os.environ.setdefault('AIOHTTP_NO_EXTENSIONS', '1')
 
 import datetime
 from datetime import timedelta
 import logging
 
-import aiohttp
-import voluptuous as vol
+import sys
 
-from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL)
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.event import async_track_time_interval
+from aiohttp import ClientResponseError
+
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+import aiohttp
+import asyncio
+import voluptuous as vol
 
 import json as JSON
 
@@ -31,102 +34,19 @@ CONF_PHONE_NUMBER = 'phone_number'
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=900)
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_PHONE_NUMBER): cv.string,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
-    })
-}, extra=vol.ALLOW_EXTRA)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# ASYNC SETUP
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-async def async_setup(hass, config):
-
-    _LOGGER.debug('async_setup() >>> STARTED')
-
-    # create the HoMobile Platform object
-    hass.data[DOMAIN] = HoMobilePlatform(hass, config)
-
-    _LOGGER.debug('async_setup() <<< TERMINATED')
-
-    return True
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# HO.MOBILE PLATFORM
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
 
 class HoMobilePlatform:
 
-    def __init__(self, hass, config):
-
-        self._hass = hass
-        self._config = config
-
-        self._phoneNumber = config[DOMAIN][CONF_PHONE_NUMBER]
-        self._password = config[DOMAIN][CONF_PASSWORD]
-        self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
+    def __init__(self):
+        self._phoneNumber = '3519271620'
+        self._password = '58J%u#krw97WDy!W'
 
         self._credit = {}
 
-        # login and fetch data
-        hass.async_create_task(self.async_update_credits())
-
-        # starting timers
-        hass.async_create_task(self.async_start_timer())
-
-    async def async_start_timer(self):
-
-        # This is used to update the status periodically
-        _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
-        async_track_time_interval(
-            self._hass,
-            self.async_update_credits(),
-            self.update_status_interval
-        )
-
-        return True
-
-    @staticmethod
-    def _get_max(elem):
-        for content in elem.contents:
-            content = str(content).strip()
-            if content[:1] == '/':
-                return content[1:].strip()
-        return None
-
-    @staticmethod
-    def _get_renewal_datetime_from_str(renewal_str):
-        index = renewal_str.find(':')
-        _LOGGER.debug('looking for ":", index: ' + str(index))
-        if index >= 0:
-            H = int(renewal_str[index-2:index])
-            i = int(renewal_str[index+1:index+3])
-            _LOGGER.debug('time: ' + str(H) + ':' + str(i))
-            index = renewal_str.find('/')
-            _LOGGER.debug('looking for "/", index: ' + str(index))
-            if index >= 0:
-                d = int(renewal_str[index-2:index])
-                m = int(renewal_str[index+1:index+3])
-                Y = int(renewal_str[index+4:index+8])
-                _LOGGER.debug('date: ' + str(d) + '/' + str(m) + '/' + str(Y))
-                dt = datetime.datetime.combine(datetime.date(Y, m, d), datetime.time(H, i))
-                _LOGGER.info('renewal datetime: ' + str(dt))
-                return dt
-
-        return renewal_str
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.async_update_credits())
 
     async def async_update_credits(self):
-
         _LOGGER.debug('Updating HoMobile account credit...')
 
         # --------------------------------------------------------------------------------------------------------------
@@ -138,6 +58,16 @@ class HoMobilePlatform:
 
         # Session keeping cookies
         async with aiohttp.ClientSession() as session:
+
+            # Aggiornamento del 29/07/2022
+            #
+            # Sembra che il sito web https://www.ho-mobile.it/ risponda con qualche carattere corrotto nell'header
+            # Questo fa fallire il comando session.get(url) con il seguente errore:
+            # aiohttp.client_exceptions.ClientResponseError: 400, message='Invalid header value char', url=URL('https://www.ho-mobile.it/')
+            #
+            # Il workaorund è quello di impostare la variabile di ambiente AIOHTTP_NO_EXTENSIONS = 1
+            # Ma, purtroppo, non funziona in Home Assistant!
+
             async with session.get(url) as response:
 
                 # get http status code
@@ -153,9 +83,9 @@ class HoMobilePlatform:
 
                 else:
 
-                    # ----------------------------------------------------------------------------------------------------------
-                    #   FASE 2 - Inserimento del numero di telefono
-                    # ----------------------------------------------------------------------------------------------------------
+                    # --------------------------------------------------------------------------------------------------
+                    #   FASE 2 - Recupero dell'accountId dal numero di telefono
+                    # --------------------------------------------------------------------------------------------------
 
                     # login url
                     url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/checkAccount'
@@ -194,9 +124,9 @@ class HoMobilePlatform:
 
                             if json['operationStatus']['status'] == 'OK':
 
-                                # --------------------------------------------------------------------------------------------------
-                                #   FASE 2 - Inserimento della password
-                                # --------------------------------------------------------------------------------------------------
+                                # --------------------------------------------------------------------------------------
+                                #   FASE 3 - Login tramite accountId e password
+                                # --------------------------------------------------------------------------------------
 
                                 accountId = json['accountId']
 
@@ -235,9 +165,9 @@ class HoMobilePlatform:
                                         # get html in bytes
                                         _LOGGER.debug('Username e password inseriti CORRETTAMENTE')
 
-                                        # --------------------------------------------------------------------------------------------------
+                                        # ------------------------------------------------------------------------------
                                         #   FASE 3 - Recupero del productId
-                                        # --------------------------------------------------------------------------------------------------
+                                        # ------------------------------------------------------------------------------
 
                                         # login url
                                         url = 'https://www.ho-mobile.it/leanfe/restAPI/CatalogInfoactivationService/getCatalogInfoactivation'
@@ -294,7 +224,8 @@ class HoMobilePlatform:
                                                     'Content-Type': 'application/json'
                                                 }
 
-                                                async with session.post(url, json=json, headers=headers) as response:
+                                                async with session.post(url, json=json,
+                                                                        headers=headers) as response:
 
                                                     # get http status code
                                                     http_status_code = response.status
@@ -302,8 +233,8 @@ class HoMobilePlatform:
                                                     # check response is okay
                                                     if http_status_code != 200:
 
-                                                        _LOGGER.error(
-                                                            'login page (' + url + ') error: ' + str(http_status_code))
+                                                        _LOGGER.error('login page (' + url + ') error: ' + str(
+                                                            http_status_code))
 
                                                         # get html in bytes
                                                         _LOGGER.debug(str(await response.text()))
@@ -347,7 +278,10 @@ class HoMobilePlatform:
                                                                 _LOGGER.info(k + ': ' + str(v['value']))
                                                                 attributes = {"icon": v['icon'],
                                                                               'unit_of_measurement': v['uom']}
-                                                                self._hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
+                                                                # self._hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
                                                         return True
 
         return False
+
+
+HMP = HoMobilePlatform()
