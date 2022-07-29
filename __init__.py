@@ -2,7 +2,7 @@ import datetime
 from datetime import timedelta
 import logging
 
-import requests
+import grequests
 import voluptuous as vol
 
 from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL)
@@ -126,7 +126,7 @@ class HoMobilePlatform:
     async def async_update_credits(self):
 
         # Session keeping cookies
-        session = requests.Session()
+        session = grequests.Session()
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
@@ -138,7 +138,7 @@ class HoMobilePlatform:
         url = 'https://www.ho-mobile.it/'
 
         # enable coockie
-        response = await self._hass.async_add_executor_job(session.get(url))
+        response = session.get(url)
 
         # get http status code
         http_status_code = response.status_code
@@ -172,7 +172,7 @@ class HoMobilePlatform:
             }
 
             # get response to POST request
-            response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+            response = session.post(url, json=json, headers=headers)
             # get http status code
             http_status_code = response.status_code
             # check response is okay
@@ -218,7 +218,7 @@ class HoMobilePlatform:
                     }
 
                     # get response to POST request
-                    response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                    response = session.post(url, json=json, headers=headers)
 
                     # get http status code
                     http_status_code = response.status_code
@@ -254,7 +254,7 @@ class HoMobilePlatform:
                         }
 
                         # get response to POST request
-                        response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                        response = session.post(url, json=json, headers=headers)
 
                         # get http status code
                         http_status_code = response.status_code
@@ -295,7 +295,7 @@ class HoMobilePlatform:
                             }
 
                             # get response to POST request
-                            response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                            response = session.post(url, json=json, headers=headers)
 
                             # get http status code
                             http_status_code = response.status_code
