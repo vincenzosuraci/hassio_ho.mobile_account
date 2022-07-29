@@ -88,7 +88,7 @@ class HoMobilePlatform:
         _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
         async_track_time_interval(
             self._hass,
-            self.async_update_credits,
+            self.async_update_credits(),
             self.update_status_interval
         )
 
@@ -123,7 +123,7 @@ class HoMobilePlatform:
 
         return renewal_str
 
-    async def async_update_credits(self, now=None):
+    async def async_update_credits(self):
 
         # Session keeping cookies
         session = requests.Session()
@@ -138,7 +138,7 @@ class HoMobilePlatform:
         url = 'https://www.ho-mobile.it/'
 
         # enable coockie
-        response = await hass.async_add_executor_job(session.get(url))
+        response = await self._hass.async_add_executor_job(session.get(url))
 
         # get http status code
         http_status_code = response.status_code
@@ -172,7 +172,7 @@ class HoMobilePlatform:
             }
 
             # get response to POST request
-            response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+            response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
             # get http status code
             http_status_code = response.status_code
             # check response is okay
@@ -218,7 +218,7 @@ class HoMobilePlatform:
                     }
 
                     # get response to POST request
-                    response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                    response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                     # get http status code
                     http_status_code = response.status_code
@@ -254,7 +254,7 @@ class HoMobilePlatform:
                         }
 
                         # get response to POST request
-                        response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                        response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                         # get http status code
                         http_status_code = response.status_code
@@ -295,7 +295,7 @@ class HoMobilePlatform:
                             }
 
                             # get response to POST request
-                            response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
+                            response = await self._hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                             # get http status code
                             http_status_code = response.status_code
