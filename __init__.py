@@ -138,7 +138,7 @@ class HoMobilePlatform:
         url = 'https://www.ho-mobile.it/'
 
         # enable coockie
-        response = session.get(url)
+        response = await hass.async_add_executor_job(session.get(url))
 
         # get http status code
         http_status_code = response.status_code
@@ -172,7 +172,7 @@ class HoMobilePlatform:
             }
 
             # get response to POST request
-            response = session.post(url, json=json, headers=headers)
+            response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
             # get http status code
             http_status_code = response.status_code
             # check response is okay
@@ -218,7 +218,7 @@ class HoMobilePlatform:
                     }
 
                     # get response to POST request
-                    response = session.post(url, json=json, headers=headers)
+                    response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                     # get http status code
                     http_status_code = response.status_code
@@ -254,7 +254,7 @@ class HoMobilePlatform:
                         }
 
                         # get response to POST request
-                        response = session.post(url, json=json, headers=headers)
+                        response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                         # get http status code
                         http_status_code = response.status_code
@@ -295,7 +295,7 @@ class HoMobilePlatform:
                             }
 
                             # get response to POST request
-                            response = session.post(url, json=json, headers=headers)
+                            response = await hass.async_add_executor_job(session.post(url, json=json, headers=headers))
 
                             # get http status code
                             http_status_code = response.status_code
