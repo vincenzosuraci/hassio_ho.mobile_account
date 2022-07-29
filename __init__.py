@@ -5,7 +5,7 @@ import logging
 import requests
 import voluptuous as vol
 
-from homeassistant.const import (CONF_PHONE_NUMBER, CONF_PASSWORD, CONF_SCAN_INTERVAL)
+from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
@@ -17,7 +17,7 @@ import json as JSON
 _LOGGER = logging.getLogger('ho_mobile_account_init')
 _LOGGER.setLevel(logging.DEBUG)
 
-# This is needed, it impact on the name to be called in configurations.yaml
+# This is needed, it impacts on the name to be called in configurations.yaml
 # Ref: https://developers.home-assistant.io/docs/en/creating_integration_manifest.html
 DOMAIN = 'ho_mobile_account'
 
@@ -25,13 +25,14 @@ REQUIREMENTS = ['beautifulsoup4']
 
 OBJECT_ID_CREDIT = 'credit'
 
+CONF_PHONE_NUMBER = 'phone_number'
+
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=900)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Required(CONF_PHONE_NUMBER): cv.string,
-
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
     })
 }, extra=vol.ALLOW_EXTRA)
