@@ -1,5 +1,8 @@
 # Introduzione
-- Questo custom component permette il recupero delle informazioni sul numero di GB (internet/dati) rimanenti, sui GB totali previsti dal piano e sulla data del successivo rinnovo. 
+- Questo custom component permette di recuperare le seguenti informazioni realtive alla scheda SIM dell'operatore di telefonia mobile <code>ho.</code>: 
+  - numero di GB (internet/dati) rimanenti; 
+  - numero di GB totali previsti dal piano;
+  - data del successivo rinnovo.
 - Non è attualmente supportato il caso di 2 o più SIM. In particolare, attualmente è supportato il caso di una sola SIM.
 
 # Installazione
