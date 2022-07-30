@@ -1,6 +1,6 @@
 # Introduzione
 - Questo custom component permette il recupero delle informazioni sul numero di GB (internet/dati) rimanenti, sui GB totali previsti dal piano e sulla data del successivo rinnovo. 
-- Non è attualmente supportato il caso di avere 2 o più SIM.
+- Non è attualmente supportato il caso di 2 o più SIM. In particolare, attualmente è supportato il caso di una sola SIM.
 
 # Installazione
 - Creare la directory <code>custom_components</code> nella directory principale (quella che contiene il file <code>configuration.yaml</code>)
