@@ -15,7 +15,7 @@ ho_mobile_account:
   password: !secret ho_mobile_account_password
   ```
 
-- Andare nel file "secrets.yaml" e aggiungere le seguenti righe (e salvare):
+- Andare nel file <code>secrets.yaml</code> e aggiungere le seguenti righe (e salvare):
 
 ```yaml
 ho_mobile_account_phone_number: "inserire-qui-il-numero-di-telefono"  
