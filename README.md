@@ -3,7 +3,7 @@
   - numero di GB (internet/dati) rimanenti; 
   - numero di GB totali previsti dal piano;
   - data del successivo rinnovo.
-- Non è attualmente supportato il caso di 2 o più SIM. In particolare, attualmente è supportato il caso di una sola SIM.
+- Viene supportato il caso di 2 o più SIM.
 
 # Installazione
 - Creare la directory <code>custom_components</code> nella directory principale (quella che contiene il file <code>configuration.yaml</code>)
@@ -14,21 +14,23 @@
 
 ```yaml
 ho_mobile_account:
-  phone_number: !secret ho_mobile_account_phone_number
+  phone_numbers: !secret ho_mobile_account_phone_numbers
   password: !secret ho_mobile_account_password
   ```
 
 - Andare nel file <code>secrets.yaml</code> e aggiungere le seguenti righe (e salvare):
 
 ```yaml
-ho_mobile_account_phone_number: "inserire-qui-il-numero-di-telefono"  
 ho_mobile_account_password: "inserire-qui-la-password"
+ho_mobile_account_phone_numbers: 
+  - "inserire-qui-il-numero-di-telefono-#1"
+  - "inserire-qui-il-numero-di-telefono-#2"  
 ```
 
 - Riavviare Home Assistant
-- Dovrebbero comparire le seguenti entità:
-  - <code>ho_mobile_account.internet</code> > GB rimasti
-  - <code>ho_mobile_account.internet_renewal</code> > Data del prossimo rinnovo
-  - <code>ho_mobile_account.internet_threshold</code> > GB totali della offerta
+- Dovrebbero comparire le seguenti terne di entità (una terna per ogni numero di telefono):
+  - <code>ho_mobile_account.<numero-di-telefono>_internet</code> > GB rimasti
+  - <code>ho_mobile_account.<numero-di-telefono>_internet_renewal</code> > Data del prossimo rinnovo
+  - <code>ho_mobile_account.<numero-di-telefono>_internet_threshold</code> > GB totali della offerta
 
 
