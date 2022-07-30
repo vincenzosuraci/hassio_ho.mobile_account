@@ -29,8 +29,8 @@ ho_mobile_account_phone_numbers:
 
 - Riavviare Home Assistant
 - Dovrebbero comparire le seguenti terne di entità (una terna per ogni numero di telefono):
-  - <code>ho_mobile_account.<numero-di-telefono>_internet</code> > GB rimasti
-  - <code>ho_mobile_account.<numero-di-telefono>_internet_renewal</code> > Data del prossimo rinnovo
-  - <code>ho_mobile_account.<numero-di-telefono>_internet_threshold</code> > GB totali della offerta
+  - <code>ho_mobile_account.\<numero-di-telefono\>_internet</code> > GB rimasti
+  - <code>ho_mobile_account.\<numero-di-telefono\>_internet_renewal</code> > Data del prossimo rinnovo
+  - <code>ho_mobile_account.\<numero-di-telefono\>_internet_threshold</code> > GB totali della offerta
 
 
