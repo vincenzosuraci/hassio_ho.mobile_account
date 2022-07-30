@@ -1,6 +1,8 @@
-# hassio_ho.mobile_account
+# Introduzione
+- Questo custom component permette il recupero delle informazioni sul numero di GB (internet/dati) rimanenti, sui GB totali previsti dal piano e sulla data del successivo rinnovo. 
+- Non è attualmente supportato il caso di avere 2 o più SIM.
 
-Installazione:
+# Installazione
 - Creare la directory <code>custom_components</code> nella directory principale (quella che contiene il file <code>configuration.yaml</code>)
 - Nella directory <code>custom_components</code>, creare la directory <code>ho_mobile_account</code>
 - Nella directory <code>ho_mobile_account</code> copia i file <code>\_\_init.py\_\_</code> e <code>manifest.json</code>
