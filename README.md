@@ -1,5 +1,5 @@
 # Introduzione
-- Questo custom component permette di recuperare le seguenti informazioni realtive alla scheda SIM dell'operatore di telefonia mobile <code>ho.</code>: 
+- Questo custom component permette di recuperare le seguenti informazioni realtive alla scheda SIM dell'operatore <code>ho-mobile</code>: 
   - numero di GB (internet/dati) rimanenti; 
   - numero di GB totali previsti dal piano;
   - data del successivo rinnovo.
