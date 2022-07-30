@@ -1,11 +1,11 @@
 # hassio_ho.mobile_account
 
 Installazione:
-- Creare la directory "custom_components" nella directory principale (quella che contiene il file configuration.yaml)
-- Nella directory "custom_components", creare la directory "ho_mobile_account"
-- Nella directory "ho_mobile_account" copia i file "___init.py___" e "manifest.json"
+- Creare la directory <code>custom_components</code> nella directory principale (quella che contiene il file <code>configuration.yaml</code>)
+- Nella directory <code>custom_components</code>, creare la directory <code>ho_mobile_account</code>
+- Nella directory <code>ho_mobile_account</code> copia i file <code>\_\_\_init.py\_\_\_</code> e <code>manifest.json</code>
 - Riavviare Home Assistant
-- Dopo aver riavviato Home Assistant, nel file "configuration.yaml" aggiungere le seguenti righe (e salvare):
+- Dopo aver riavviato Home Assistant, nel file <code>configuration.yaml</code> aggiungere le seguenti righe (e salvare):
 
 ```yaml
 ho_mobile_account:
@@ -16,14 +16,14 @@ ho_mobile_account:
 - Andare nel file "secrets.yaml" e aggiungere le seguenti righe (e salvare):
 
 ```yaml
-ho_mobile_account_phone_number: "inserire-qui-il-numero-di-teleno"  
+ho_mobile_account_phone_number: "inserire-qui-il-numero-di-telefono"  
 ho_mobile_account_password: "inserire-qui-la-password"
 ```
 
 - Riavviare Home Assistant
-- Dovrebbero comparirè le seguenti entità:
-  - ho_mobile_account.internet > GB rimasti
-  - ho_mobile_account.internet_renewal > Data del prossimo rinnovo
-  - ho_mobile_account.internet_threshold > GB totali della offerta
+- Dovrebbero comparire le seguenti entità:
+  - <code>ho_mobile_account.internet</code> > GB rimasti
+  - <code>ho_mobile_account.internet_renewal</code> > Data del prossimo rinnovo
+  - <code>ho_mobile_account.internet_threshold</code> > GB totali della offerta
 
 
