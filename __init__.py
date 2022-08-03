@@ -28,6 +28,7 @@ OBJECT_ID_CREDIT = 'credit'
 
 CONF_PHONE_NUMBERS = 'phone_numbers'
 
+# Default scan interval = 15 minutes = 900 seconds
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=900)
 
 CONFIG_SCHEMA = vol.Schema({
@@ -71,7 +72,7 @@ class HoMobilePlatform:
         self._hass = hass
         self._config = config
 
-        self._phoneNumbers = config[DOMAIN][CONF_PHONE_NUMBERS]
+        self._phone_numbers = config[DOMAIN][CONF_PHONE_NUMBERS]
         self._password = config[DOMAIN][CONF_PASSWORD]
         self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
 
@@ -83,6 +84,7 @@ class HoMobilePlatform:
         # starting timers
         hass.async_create_task(self.async_start_timer())
 
+    # Attention: the following must be a Coroutine Function, thus it MUST return something!
     async def async_start_timer(self):
 
         # This is used to update the status periodically
@@ -95,45 +97,17 @@ class HoMobilePlatform:
 
         return True
 
-    @staticmethod
-    def _get_max(elem):
-        for content in elem.contents:
-            content = str(content).strip()
-            if content[:1] == '/':
-                return content[1:].strip()
-        return None
-
-    @staticmethod
-    def _get_renewal_datetime_from_str(renewal_str):
-        index = renewal_str.find(':')
-        _LOGGER.debug('looking for ":", index: ' + str(index))
-        if index >= 0:
-            H = int(renewal_str[index-2:index])
-            i = int(renewal_str[index+1:index+3])
-            _LOGGER.debug('time: ' + str(H) + ':' + str(i))
-            index = renewal_str.find('/')
-            _LOGGER.debug('looking for "/", index: ' + str(index))
-            if index >= 0:
-                d = int(renewal_str[index-2:index])
-                m = int(renewal_str[index+1:index+3])
-                Y = int(renewal_str[index+4:index+8])
-                _LOGGER.debug('date: ' + str(d) + '/' + str(m) + '/' + str(Y))
-                dt = datetime.datetime.combine(datetime.date(Y, m, d), datetime.time(H, i))
-                _LOGGER.info('renewal datetime: ' + str(dt))
-                return dt
-
-        return renewal_str
-
+    # Attention: the following must be a Coroutine Function, thus it MUST return something!
     async def async_update_credits(self):
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
         threads = []
 
-        for phoneNumber in self._phoneNumbers:
+        for phone_number in self._phone_numbers:
             thread = Thread(
-                target=HoMobilePlatform.thread_update_credits,
-                args=(phoneNumber, self._password, self._credit, self._hass)
+                target=self.thread_update_credits,
+                args=(phone_number, self._password, self._credit, self._hass)
             )
             thread.start()
             threads.append(thread)
@@ -141,7 +115,9 @@ class HoMobilePlatform:
         for thread in threads:
             thread.join()
 
-    def thread_update_credits(phoneNumber, password, credit, hass):
+        return True
+
+    def thread_update_credits(self, phone_number, password, credit, hass):
 
         # --------------------------------------------------------------------------------------------------------------
         #   FASE 1 - Caricamento della homepage
@@ -178,7 +154,7 @@ class HoMobilePlatform:
             # set POST https params
             json = {
                 'email': None,
-                'phoneNumber': phoneNumber,
+                'phoneNumber': phone_number,
                 'channel': 'WEB'
             }
             headers = {
@@ -222,7 +198,7 @@ class HoMobilePlatform:
                     json = {
                         'accountId': accountId,
                         'email': None,
-                        'phoneNumber': phoneNumber,
+                        'phoneNumber': phone_number,
                         'password': password,
                         'channel': "WEB",
                         'isRememberMe': False
@@ -260,7 +236,7 @@ class HoMobilePlatform:
                         # set POST https params
                         json = {
                             "channel": "WEB",
-                            "phoneNumber": phoneNumber
+                            "phoneNumber": phone_number
                         }
 
                         headers = {
@@ -300,7 +276,7 @@ class HoMobilePlatform:
                             # set POST https params
                             json = {
                                 "channel": "WEB",
-                                "phoneNumber": phoneNumber,
+                                "phoneNumber": phone_number,
                                 "productId": productId
                             }
 
@@ -330,8 +306,8 @@ class HoMobilePlatform:
 
                                 json = JSON.loads(json_str)
 
-                                if phoneNumber not in credit:
-                                    credit[phoneNumber] = {}
+                                if phone_number not in credit:
+                                    credit[phone_number] = {}
 
                                 for item in json['countersList'][0]['countersDetailsList']:
                                     uom = item['residualUnit']
@@ -339,7 +315,7 @@ class HoMobilePlatform:
                                         key = 'internet'
                                         value = item['residual']
                                         icon = 'mdi:web'
-                                        credit[phoneNumber][key] = {
+                                        credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom}
@@ -347,7 +323,7 @@ class HoMobilePlatform:
                                         key = 'internet_threshold'
                                         value = item['threshold']
                                         icon = 'mdi:web'
-                                        credit[phoneNumber][key] = {
+                                        credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom}
@@ -355,14 +331,14 @@ class HoMobilePlatform:
                                         key = 'internet_renewal'
                                         value = item['nextResetDate']
                                         icon = 'mdi:calendar-clock'
-                                        credit[phoneNumber][key] = {
+                                        credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': ''}
 
-                                for k, v in credit[phoneNumber].items():
+                                for k, v in credit[phone_number].items():
                                     if v['value'] is not None:
-                                        pnk = phoneNumber + '_' + k
+                                        pnk = phone_number + '_' + k
                                         _LOGGER.info(pnk + ': ' + str(v['value']))
                                         attributes = {
                                             'icon': v['icon'],
