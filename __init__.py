@@ -78,26 +78,23 @@ class HoMobilePlatform:
 
         self._credit = {}
 
-        # login and fetch data
         hass.async_create_task(self.async_update_credits())
 
-        # starting timers
         hass.async_create_task(self.async_start_timer())
 
-    # Attention: the following must be a Coroutine Function, thus it MUST return something!
     async def async_start_timer(self):
 
         # This is used to update the status periodically
         _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
         async_track_time_interval(
             self._hass,
-            self.async_update_credits(),
+            # Do not put self.async_update_credits(), with the parenthesis,
+            # otherwise you will pass a Coroutine, not a Coroutine function!
+            # and get "Coroutine not allowed to be passed to HassJob"
+            self.async_update_credits,
             self.update_status_interval
         )
 
-        return True
-
-    # Attention: the following must be a Coroutine Function, thus it MUST return something!
     async def async_update_credits(self):
 
         _LOGGER.debug('Updating HoMobile account credit...')
@@ -114,8 +111,6 @@ class HoMobilePlatform:
 
         for thread in threads:
             thread.join()
-
-        return True
 
     def thread_update_credits(self, phone_number, password, credit, hass):
 
