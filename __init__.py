@@ -335,7 +335,7 @@ class HoMobilePlatform:
 
                                 for item in json['countersList'][0]['countersDetailsList']:
                                     uom = item['residualUnit']
-                                    if uom == 'GB':
+                                    if uom in ['GB','MB']:
                                         key = 'internet'
                                         value = item['residual']
                                         icon = 'mdi:web'
