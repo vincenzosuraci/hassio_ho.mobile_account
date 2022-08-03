@@ -86,16 +86,20 @@ class HoMobilePlatform:
 
         # This is used to update the status periodically
         _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
+
+        # Do not put "self.async_update_credits()", with the parenthesis,
+        # otherwise you will pass a Coroutine, not a Coroutine function!
+        # and get "Coroutine not allowed to be passed to HassJob"
+        # Put "self.async_update_credits" without the parenthesis
         async_track_time_interval(
             self._hass,
-            # Do not put self.async_update_credits(), with the parenthesis,
-            # otherwise you will pass a Coroutine, not a Coroutine function!
-            # and get "Coroutine not allowed to be passed to HassJob"
             self.async_update_credits,
             self.update_status_interval
         )
 
-    async def async_update_credits(self):
+    # Do not remove now=None, since when async_track_time_interval()
+    # calls async_update_credits(), it passes to the function the time!
+    async def async_update_credits(self, now=None):
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
