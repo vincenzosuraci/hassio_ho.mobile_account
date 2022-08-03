@@ -26,14 +26,14 @@ REQUIREMENTS = ['beautifulsoup4']
 
 OBJECT_ID_CREDIT = 'credit'
 
-CONF_PHONE_NUMBER = 'phone_number'
+CONF_PHONE_NUMBERS = 'phone_numbers'
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=900)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_PHONE_NUMBER): cv.string,
+        vol.Required(CONF_PHONE_NUMBERS): [cv.string],
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
     })
 }, extra=vol.ALLOW_EXTRA)
@@ -48,12 +48,12 @@ CONFIG_SCHEMA = vol.Schema({
 
 async def async_setup(hass, config):
 
-    _LOGGER.debug('async_setup() >>> STARTED')
+    #_LOGGER.debug('async_setup() >>> STARTED')
 
     # create the HoMobile Platform object
     hass.data[DOMAIN] = HoMobilePlatform(hass, config)
 
-    _LOGGER.debug('async_setup() <<< TERMINATED')
+    #_LOGGER.debug('async_setup() <<< TERMINATED')
 
     return True
 
@@ -71,7 +71,7 @@ class HoMobilePlatform:
         self._hass = hass
         self._config = config
 
-        self._phoneNumber = config[DOMAIN][CONF_PHONE_NUMBER]
+        self._phoneNumbers = config[DOMAIN][CONF_PHONE_NUMBERS]
         self._password = config[DOMAIN][CONF_PASSWORD]
         self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
 
@@ -128,11 +128,18 @@ class HoMobilePlatform:
 
         _LOGGER.debug('Updating HoMobile account credit...')
 
-        new_thread = Thread(target=HoMobilePlatform.thread_update_credits, args=(self._phoneNumber, self._password, self._credit, self._hass))
+        threads = []
 
-        new_thread.start()
+        for phoneNumber in self._phoneNumbers:
+            thread = Thread(
+                target=HoMobilePlatform.thread_update_credits,
+                args=(phoneNumber, self._password, self._credit, self._hass)
+            )
+            thread.start()
+            threads.append(thread)
 
-        new_thread.join()
+        for thread in threads:
+            thread.join()
 
     def thread_update_credits(phoneNumber, password, credit, hass):
 
@@ -323,13 +330,16 @@ class HoMobilePlatform:
 
                                 json = JSON.loads(json_str)
 
+                                if phoneNumber not in credit:
+                                    credit[phoneNumber] = {}
+
                                 for item in json['countersList'][0]['countersDetailsList']:
                                     uom = item['residualUnit']
                                     if uom == 'GB':
                                         key = 'internet'
                                         value = item['residual']
                                         icon = 'mdi:web'
-                                        credit[key] = {
+                                        credit[phoneNumber][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom}
@@ -337,7 +347,7 @@ class HoMobilePlatform:
                                         key = 'internet_threshold'
                                         value = item['threshold']
                                         icon = 'mdi:web'
-                                        credit[key] = {
+                                        credit[phoneNumber][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom}
@@ -345,14 +355,17 @@ class HoMobilePlatform:
                                         key = 'internet_renewal'
                                         value = item['nextResetDate']
                                         icon = 'mdi:calendar-clock'
-                                        credit[key] = {
+                                        credit[phoneNumber][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': ''}
 
-                                for k, v in credit.items():
+                                for k, v in credit[phoneNumber].items():
                                     if v['value'] is not None:
-                                        _LOGGER.info(k + ': ' + str(v['value']))
-                                        attributes = {"icon": v['icon'],
-                                                      'unit_of_measurement': v['uom']}
-                                        hass.states.async_set(DOMAIN + "." + k, v['value'], attributes)
+                                        pnk = phoneNumber + '_' + k
+                                        _LOGGER.info(pnk + ': ' + str(v['value']))
+                                        attributes = {
+                                            'icon': v['icon'],
+                                            'unit_of_measurement': v['uom']
+                                        }
+                                        hass.states.async_set(DOMAIN + "." + pnk, v['value'], attributes)
