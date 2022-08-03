@@ -34,4 +34,13 @@ ho_mobile_account_phone_numbers:
   - <code>ho_mobile_account.\<numero-di-telefono\>_internet_renewal</code> > Data del prossimo rinnovo
   - <code>ho_mobile_account.\<numero-di-telefono\>_internet_threshold</code> > GB totali della offerta
 
+# Configurazione
+- Di default, viene eseguito un aggiornamento dei dati ogni 15 minuti
+- Si può personalizzare il periodo di aggiornamento dei dati, configurando il paramentro <code>scan_interval</code> espresso in secondi:
+```yaml
+ho_mobile_account:
+  phone_numbers: !secret ho_mobile_account_phone_numbers
+  password: !secret ho_mobile_account_password
+  scan_interval: 900
+  ```
 
