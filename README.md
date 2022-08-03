@@ -3,8 +3,8 @@
   - numero di GB (internet/dati) rimanenti; 
   - numero di GB totali previsti dal piano;
   - data del successivo rinnovo.
-- Viene supportato il caso di 2 o più SIM associate allo stesso account.
-- Non è supportato il caso di avere 2 o più account.
+- Viene supportato il caso di 2 o più SIM (numeri di telefono) associate allo stesso account (password).
+- Non è supportato il caso di 2 o più account.
 
 # Installazione
 - Creare la directory <code>custom_components</code> nella directory principale (quella che contiene il file <code>configuration.yaml</code>)
