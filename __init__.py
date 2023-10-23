@@ -108,7 +108,7 @@ class HoMobilePlatform:
 
         for phone_number in self._phone_numbers:
             thread = Thread(
-                target=self.thread_update_credits,
+                target=HoMobilePlatform.thread_update_credits,
                 args=(phone_number, self._password, self._credit, self._hass)
             )
             thread.start()
@@ -117,7 +117,8 @@ class HoMobilePlatform:
         for thread in threads:
             thread.join()
 
-    def thread_update_credits(self, phone_number, password, credit, hass):
+    @staticmethod
+    def thread_update_credits(phone_number, password, credit, hass):
 
         # --------------------------------------------------------------------------------------------------------------
         #   FASE 1 - Caricamento della homepage
@@ -179,7 +180,7 @@ class HoMobilePlatform:
                 # get html in bytes
                 json_str = response.text
                 # _LOGGER.debug(json_str)
-                json = json_lib.load(json_str)
+                json = json_lib.loads(json_str)
                 # _LOGGER.debug(str(json))
                 _LOGGER.debug('Status is ' + json['operationStatus']['status'])
 
@@ -262,9 +263,9 @@ class HoMobilePlatform:
 
                             json_str = response.text
                             # _LOGGER.debug(json_str)
-                            json = json_lib.load(json_str)
+                            json = json_lib.loads(json_str)
 
-                            productId = json['activeOffer']['productList'][0]['productId']
+                            product_id = json['activeOffer']['productList'][0]['productId']
 
                             # ------------------------------------------------------------------------------------------
                             #   FASE 4 - Recupero dei contatori
@@ -277,7 +278,7 @@ class HoMobilePlatform:
                             json = {
                                 "channel": "WEB",
                                 "phoneNumber": phone_number,
-                                "productId": productId
+                                "productId": product_id
                             }
 
                             headers = {
@@ -304,7 +305,7 @@ class HoMobilePlatform:
                                 json_str = response.text
                                 # _LOGGER.debug(json_str)
 
-                                json = json_lib.load(json_str)
+                                json = json_lib.loads(json_str)
 
                                 if phone_number not in credit:
                                     credit[phone_number] = {}
@@ -342,10 +343,10 @@ class HoMobilePlatform:
                                 # ------------------------------------------------------------------------------
 
                                 # Current Epoch Unix Timestamp (ad es. 1698184800000)
-                                renewal_ts = json['countersList'][0]['productNextRenewalDate']
+                                renewal_ts = json['countersList'][0]['productNextRenewalDate'] / 1000
 
                                 key = 'internet_renewal'
-                                value = datetime.utcfromtimestamp(renewal_ts).strftime('%Y-%m-%d %H:%M:%S')
+                                value = datetime.fromtimestamp(renewal_ts).strftime('%Y-%m-%d')
                                 icon = 'mdi:calendar-clock'
                                 credit[phone_number][key] = {
                                     'value': value,
