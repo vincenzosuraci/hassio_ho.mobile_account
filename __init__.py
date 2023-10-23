@@ -1,6 +1,5 @@
 from threading import Thread
 
-import datetime
 from datetime import timedelta
 import logging
 
@@ -8,11 +7,13 @@ import requests
 
 import voluptuous as vol
 
+from datetime import datetime
+
 from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
-import json as JSON
+import json as json_lib
 
 # Setting log
 _LOGGER = logging.getLogger('ho_mobile_account_init')
@@ -143,9 +144,9 @@ class HoMobilePlatform:
 
         else:
 
-            # --------------------------------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------------------------------------
             #   FASE 2 - Recupero dell'accountId dal numero di telefono
-            # --------------------------------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------------------------------------
 
             # login url
             url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/checkAccount'
@@ -178,24 +179,24 @@ class HoMobilePlatform:
                 # get html in bytes
                 json_str = response.text
                 # _LOGGER.debug(json_str)
-                json = JSON.loads(json_str)
+                json = json_lib.load(json_str)
                 # _LOGGER.debug(str(json))
                 _LOGGER.debug('Status is ' + json['operationStatus']['status'])
 
                 if json['operationStatus']['status'] == 'OK':
 
-                    # --------------------------------------------------------------------------------------
+                    # --------------------------------------------------------------------------------------------------
                     #   FASE 3 - Login tramite accountId e password
-                    # --------------------------------------------------------------------------------------
+                    # --------------------------------------------------------------------------------------------------
 
-                    accountId = json['accountId']
+                    account_id = json['accountId']
 
                     # login url
                     url = 'https://www.ho-mobile.it/leanfe/restAPI/LoginService/login'
 
                     # set POST https params
                     json = {
-                        'accountId': accountId,
+                        'accountId': account_id,
                         'email': None,
                         'phoneNumber': phone_number,
                         'password': password,
@@ -225,9 +226,9 @@ class HoMobilePlatform:
                         # get html in bytes
                         _LOGGER.debug('Username e password inseriti CORRETTAMENTE')
 
-                        # ------------------------------------------------------------------------------
+                        # ----------------------------------------------------------------------------------------------
                         #   FASE 3 - Recupero del productId
-                        # ------------------------------------------------------------------------------
+                        # ----------------------------------------------------------------------------------------------
 
                         # login url
                         url = 'https://www.ho-mobile.it/leanfe/restAPI/CatalogInfoactivationService/getCatalogInfoactivation'
@@ -261,13 +262,13 @@ class HoMobilePlatform:
 
                             json_str = response.text
                             # _LOGGER.debug(json_str)
-                            json = JSON.loads(json_str)
+                            json = json_lib.load(json_str)
 
                             productId = json['activeOffer']['productList'][0]['productId']
 
-                            # --------------------------------------------------------------------------------------------------
+                            # ------------------------------------------------------------------------------------------
                             #   FASE 4 - Recupero dei contatori
-                            # --------------------------------------------------------------------------------------------------
+                            # ------------------------------------------------------------------------------------------
 
                             # login url
                             url = 'https://www.ho-mobile.it/leanfe/restAPI/CountersService/getCounters'
@@ -303,7 +304,7 @@ class HoMobilePlatform:
                                 json_str = response.text
                                 # _LOGGER.debug(json_str)
 
-                                json = JSON.loads(json_str)
+                                json = json_lib.load(json_str)
 
                                 if phone_number not in credit:
                                     credit[phone_number] = {}
@@ -311,29 +312,46 @@ class HoMobilePlatform:
                                 for item in json['countersList'][0]['countersDetailsList']:
                                     uom = item['residualUnit']
                                     if uom in ['GB','MB']:
+
+                                        # ------------------------------------------------------------------------------
+                                        # Recupero dei M/Gbyte residui
+                                        # ------------------------------------------------------------------------------
                                         key = 'internet'
                                         value = item['residual']
                                         icon = 'mdi:web'
                                         credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
-                                            'uom': uom}
+                                            'uom': uom
+                                        }
 
+                                        # ------------------------------------------------------------------------------
+                                        # Recupero dei M/Gbyte totali
+                                        # ------------------------------------------------------------------------------
                                         key = 'internet_threshold'
                                         value = item['threshold']
                                         icon = 'mdi:web'
                                         credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
-                                            'uom': uom}
+                                            'uom': uom
+                                        }
 
-                                        key = 'internet_renewal'
-                                        value = item['nextResetDate']
-                                        icon = 'mdi:calendar-clock'
-                                        credit[phone_number][key] = {
-                                            'value': value,
-                                            'icon': icon,
-                                            'uom': ''}
+                                # ------------------------------------------------------------------------------
+                                # Recupero della data di prossimo rinnovo
+                                # ------------------------------------------------------------------------------
+
+                                # Current Epoch Unix Timestamp (ad es. 1698184800000)
+                                renewal_ts = json['countersList'][0]['productNextRenewalDate']
+
+                                key = 'internet_renewal'
+                                value = datetime.utcfromtimestamp(renewal_ts).strftime('%Y-%m-%d %H:%M:%S')
+                                icon = 'mdi:calendar-clock'
+                                credit[phone_number][key] = {
+                                    'value': value,
+                                    'icon': icon,
+                                    'uom': ''
+                                }
 
                                 for k, v in credit[phone_number].items():
                                     if v['value'] is not None:
