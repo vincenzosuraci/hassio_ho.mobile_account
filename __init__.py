@@ -346,7 +346,7 @@ class HoMobilePlatform:
                                 renewal_ts = json['countersList'][0]['productNextRenewalDate'] / 1000
 
                                 key = 'internet_renewal'
-                                value = datetime.fromtimestamp(renewal_ts).strftime('%Y-%m-%d')
+                                value = datetime.fromtimestamp(renewal_ts).strftime('%d/%m/%Y')
                                 icon = 'mdi:calendar-clock'
                                 credit[phone_number][key] = {
                                     'value': value,
