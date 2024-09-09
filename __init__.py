@@ -426,7 +426,7 @@ class HoMobilePlatform(HoMobileCrawler):
             thread.join()
 
     def debug(self, msg):
-        _LOGGER.error(msg)
+        _LOGGER.debug(msg)
 
     def info(self, msg):
         _LOGGER.info(msg)
