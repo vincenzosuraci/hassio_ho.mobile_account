@@ -1,5 +1,5 @@
 from ho_mobile import HoMobile
-from vodafone import Vodafone
+from once import Once
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -13,6 +13,7 @@ if __name__ == "__main__":
     # Ho.Mobile
     # ------------------------------------------------------------------------------------------------------------------
 
+    """
     phone_numbers = [ ]
     password = "xxx"
 
@@ -20,11 +21,13 @@ if __name__ == "__main__":
 
     for phone_number in phone_numbers:
         ho_mobile.get_phone_number_credit(phone_number, password)
+    """
 
     # ------------------------------------------------------------------------------------------------------------------
     # Vodafone
     # ------------------------------------------------------------------------------------------------------------------
 
+    """
     phone_numbers = [ "xxx", "yyy" ]
     password = "xxx"
 
@@ -32,3 +35,17 @@ if __name__ == "__main__":
 
     for phone_number in phone_numbers:
         vodafone.get_phone_number_credit(phone_number, password)
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # 1nce
+    # ------------------------------------------------------------------------------------------------------------------
+
+    sim_iccids = ["xxx"]
+    username = "yyy"
+    password = "zzz"
+
+    once = Once(username, password)
+
+    for sim_iccid in sim_iccids:
+        once.get_sim_credit(sim_iccid)
