@@ -15,17 +15,15 @@ from homeassistant.helpers.event import async_track_time_interval
 
 import json as json_lib
 
-# Setting log
-_LOGGER = logging.getLogger('ho_mobile_account_init')
-_LOGGER.setLevel(logging.DEBUG)
-
 # This is needed, it impacts on the name to be called in configurations.yaml
 # Ref: https://developers.home-assistant.io/docs/en/creating_integration_manifest.html
 DOMAIN = 'ho_mobile_account'
 
-REQUIREMENTS = ['beautifulsoup4']
+# Setting log
+_LOGGER = logging.getLogger(DOMAIN)
+_LOGGER.setLevel(logging.DEBUG)
 
-OBJECT_ID_CREDIT = 'credit'
+REQUIREMENTS = ['beautifulsoup4']
 
 CONF_PHONE_NUMBERS = 'phone_numbers'
 
