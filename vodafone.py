@@ -6,12 +6,12 @@ import json as json_lib
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# HO.MOBILE CRAWLER
+# VODAFONE CRAWLER
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class HoMobile:
+class Vodafone:
 
     def __init__(self, phone_numbers, password):
         self._phone_numbers = phone_numbers
