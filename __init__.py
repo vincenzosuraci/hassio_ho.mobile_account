@@ -51,7 +51,7 @@ CONFIG_SCHEMA = vol.Schema({
 async def async_setup(hass, config):
 
     # create the HoMobile Platform object
-    hass.data[DOMAIN] = HoMobilePlatform(hass, config)
+    hass.data[DOMAIN] = HoMobilePlatform(hass, config, DOMAIN)
 
     return True
 
