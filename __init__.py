@@ -55,66 +55,41 @@ async def async_setup(hass, config):
 
     return True
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# HO.MOBILE PLATFORM
+# HO.MOBILE CRAWLER
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
+class HoMobileCrawler:
 
-class HoMobilePlatform:
-
-    def __init__(self, hass, config):
-
-        self._hass = hass
-        self._config = config
-
-        self._phone_numbers = config[DOMAIN][CONF_PHONE_NUMBERS]
-        self._password = config[DOMAIN][CONF_PASSWORD]
-        self.update_status_interval = config[DOMAIN][CONF_SCAN_INTERVAL]
-
+    def __init__(self, password):
+        self._password = password
         self._credit = {}
 
-        hass.async_create_task(self.async_update_credits())
+    @property
+    def password(self):
+        return self._password
 
-        hass.async_create_task(self.async_start_timer())
+    @property
+    def credit(self):
+        return self._credit
 
-    async def async_start_timer(self):
+    def debug(self, msg):
+        print(msg)
 
-        # This is used to update the status periodically
-        _LOGGER.info('HoMobile credit will be updated each ' + str(self.update_status_interval))
+    def info(self, msg):
+        print(msg)
 
-        # Do not put "self.async_update_credits()", with the parenthesis,
-        # otherwise you will pass a Coroutine, not a Coroutine function!
-        # and get "Coroutine not allowed to be passed to HassJob"
-        # Put "self.async_update_credits" without the parenthesis
-        async_track_time_interval(
-            self._hass,
-            self.async_update_credits,
-            self.update_status_interval
-        )
-
-    # Do not remove now=None, since when async_track_time_interval()
-    # calls async_update_credits(), it passes to the function the time!
-    async def async_update_credits(self, now=None):
-
-        _LOGGER.debug('Updating HoMobile account credit...')
-
-        threads = []
-
-        for phone_number in self._phone_numbers:
-            thread = Thread(
-                target=HoMobilePlatform.thread_update_credits,
-                args=(phone_number, self._password, self._credit, self._hass)
-            )
-            thread.start()
-            threads.append(thread)
-
-        for thread in threads:
-            thread.join()
+    def error(self, msg):
+        print(msg)
 
     @staticmethod
-    def thread_update_credits(phone_number, password, credit, hass):
+    def save_info(pnk, v, attributes):
+        pass
+
+    def get_phone_number_credit(self, phone_number):
 
         # --------------------------------------------------------------------------------------------------------------
         #   FASE 1 - Caricamento della homepage
@@ -134,10 +109,10 @@ class HoMobilePlatform:
         # check response is okay
         if http_status_code != 200:
 
-            _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+            self.error('login page (' + url + ') error: ' + str(http_status_code))
 
             # get html in bytes
-            _LOGGER.debug(str(response.content))
+            self.debug(str(response.content))
 
         else:
 
@@ -150,13 +125,19 @@ class HoMobilePlatform:
 
             # set POST https params
             json = {
-                'email': None,
-                'phoneNumber': phone_number,
-                'channel': 'WEB'
+                "email": None,
+                "phoneNumber": phone_number,
+                "channel": "WEB"
             }
             headers = {
-                'Referer': 'https://www.ho-mobile.it/',
-                'Content-Type': 'application/json'
+
+                "Content-Type": "application/json",
+                "User-Agent": "HomeAssistant",
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Referer": "https://www.ho-mobile.it/",
+
             }
 
             response = session.post(url, json=json, headers=headers)
@@ -167,20 +148,27 @@ class HoMobilePlatform:
             # check response is okay
             if http_status_code != 200:
 
-                _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+                self.error('login page (' + url + ') error: ' + str(http_status_code))
 
                 # get html in bytes
-                _LOGGER.debug(str(response.text))
+                self.debug(str(response.text))
 
             else:
                 # get html in bytes
                 json_str = response.text
-                # _LOGGER.debug(json_str)
                 json = json_lib.loads(json_str)
-                # _LOGGER.debug(str(json))
-                _LOGGER.debug('Status is ' + json['operationStatus']['status'])
+                status = json['operationStatus']['status']
+                self.debug('Phone number ' + str(phone_number) + ' status is ' + status)
+                if status != 'OK':
 
-                if json['operationStatus']['status'] == 'OK':
+                    diagnostic = json['operationStatus']['diagnostic']
+                    errorCode = json['operationStatus']['errorCode']
+                    self.debug('Phone number ' + str(phone_number) +
+                               ' errorCode: ' + errorCode +
+                               ' - diagnostic: ' + diagnostic
+                               )
+
+                else:
 
                     # --------------------------------------------------------------------------------------------------
                     #   FASE 3 - Login tramite accountId e password
@@ -196,7 +184,7 @@ class HoMobilePlatform:
                         'accountId': account_id,
                         'email': None,
                         'phoneNumber': phone_number,
-                        'password': password,
+                        'password': self.password,
                         'channel': "WEB",
                         'isRememberMe': False
                     }
@@ -214,14 +202,14 @@ class HoMobilePlatform:
                     # check response is okay
                     if http_status_code != 200:
 
-                        _LOGGER.error('login page (' + url + ') error: ' + str(http_status_code))
+                        self.error('login page (' + url + ') error: ' + str(http_status_code))
 
                         # get html in bytes
-                        _LOGGER.debug(str(response.text))
+                        self.debug(str(response.text))
 
                     else:
                         # get html in bytes
-                        _LOGGER.debug('Username e password inseriti CORRETTAMENTE')
+                        self.debug('Username e password inseriti CORRETTAMENTE')
 
                         # ----------------------------------------------------------------------------------------------
                         #   FASE 3 - Recupero del productId
@@ -249,16 +237,16 @@ class HoMobilePlatform:
                         # check response is okay
                         if http_status_code != 200:
 
-                            _LOGGER.error(
+                            self.error(
                                 'login page (' + url + ') error: ' + str(http_status_code))
 
                             # get html in bytes
-                            _LOGGER.debug(str(response.text))
+                            self.debug(str(response.text))
 
                         else:
 
                             json_str = response.text
-                            # _LOGGER.debug(json_str)
+                            # self.debug(json_str)
                             json = json_lib.loads(json_str)
 
                             product_id = json['activeOffer']['productList'][0]['productId']
@@ -290,33 +278,32 @@ class HoMobilePlatform:
                             # check response is okay
                             if http_status_code != 200:
 
-                                _LOGGER.error('login page (' + url + ') error: ' + str(
+                                self.error('login page (' + url + ') error: ' + str(
                                     http_status_code))
 
                                 # get html in bytes
-                                _LOGGER.debug(str(response.text))
+                                self.debug(str(response.text))
 
                             else:
 
                                 json_str = response.text
-                                # _LOGGER.debug(json_str)
+                                # self.debug(json_str)
 
                                 json = json_lib.loads(json_str)
 
-                                if phone_number not in credit:
-                                    credit[phone_number] = {}
+                                if phone_number not in self.credit:
+                                    self.credit[phone_number] = {}
 
                                 for item in json['countersList'][0]['countersDetailsList']:
                                     uom = item['residualUnit']
-                                    if uom in ['GB','MB']:
-
+                                    if uom in ['GB', 'MB']:
                                         # ------------------------------------------------------------------------------
                                         # Recupero dei M/Gbyte residui
                                         # ------------------------------------------------------------------------------
                                         key = 'internet'
                                         value = item['residual']
                                         icon = 'mdi:web'
-                                        credit[phone_number][key] = {
+                                        self.credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom
@@ -328,7 +315,7 @@ class HoMobilePlatform:
                                         key = 'internet_threshold'
                                         value = item['threshold']
                                         icon = 'mdi:web'
-                                        credit[phone_number][key] = {
+                                        self.credit[phone_number][key] = {
                                             'value': value,
                                             'icon': icon,
                                             'uom': uom
@@ -344,18 +331,110 @@ class HoMobilePlatform:
                                 key = 'internet_renewal'
                                 value = datetime.fromtimestamp(renewal_ts).strftime('%d/%m/%Y')
                                 icon = 'mdi:calendar-clock'
-                                credit[phone_number][key] = {
+                                self.credit[phone_number][key] = {
                                     'value': value,
                                     'icon': icon,
                                     'uom': ''
                                 }
 
-                                for k, v in credit[phone_number].items():
+                                for k, v in self.credit[phone_number].items():
                                     if v['value'] is not None:
                                         pnk = phone_number + '_' + k
-                                        _LOGGER.info(pnk + ': ' + str(v['value']))
+                                        self.info(pnk + ': ' + str(v['value']))
                                         attributes = {
                                             'icon': v['icon'],
                                             'unit_of_measurement': v['uom']
                                         }
-                                        hass.states.async_set(DOMAIN + "." + pnk, v['value'], attributes)
+                                        self.save_info(pnk, v, attributes)
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# HO.MOBILE PLATFORM
+#
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class HoMobilePlatform(HoMobileCrawler):
+
+    def __init__(self, hass, config, domain):
+
+        self._hass = hass
+        self._config = config
+        self._domain = domain
+        self._name = 'HoMobile'
+
+        super().__init__(
+            password = self.config[self.domain][CONF_PASSWORD],
+        )
+
+        self._update_status_interval = self.config[self.domain][CONF_SCAN_INTERVAL]
+
+        self.hass.async_create_task(self.async_update_credits())
+
+        self.hass.async_create_task(self.async_start_timer())
+
+    @property
+    def hass(self):
+        return self._hass
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def update_status_interval(self):
+        return self._update_status_interval
+
+    async def async_start_timer(self):
+
+        # This is used to update the status periodically
+        self.info(self.name + ' credit will be updated each ' + str(self.update_status_interval))
+
+        # Do not put "self.async_update_credits()", with the parenthesis,
+        # otherwise you will pass a Coroutine, not a Coroutine function!
+        # and get "Coroutine not allowed to be passed to HassJob"
+        # Put "self.async_update_credits" without the parenthesis
+        async_track_time_interval(
+            self.hass,
+            self.async_update_credits,
+            self.update_status_interval
+        )
+
+    # Do not remove now=None, since when async_track_time_interval()
+    # calls async_update_credits(), it passes to the function the time!
+    async def async_update_credits(self, now=None):
+
+        self.debug('Updating ' + self._name + ' account credit...')
+
+        threads = []
+
+        for phone_number in self.config[self.domain][CONF_PHONE_NUMBERS]:
+            thread = Thread(
+                target=self.get_phone_number_credit,
+                args=phone_number
+            )
+            thread.start()
+            threads.append(thread)
+
+        for thread in threads:
+            thread.join()
+
+    def debug(self, msg):
+        _LOGGER.error(msg)
+
+    def info(self, msg):
+        _LOGGER.info(msg)
+
+    def error(self, msg):
+        _LOGGER.error(msg)
+
+    def save_info(self, pnk, v, attributes):
+        self.hass.states.async_set(self.domain + "." + pnk, v['value'], attributes)
