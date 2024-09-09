@@ -419,7 +419,7 @@ class HoMobilePlatform(HoMobileCrawler):
         for phone_number in self.config[self.domain][CONF_PHONE_NUMBERS]:
             thread = Thread(
                 target=self.get_phone_number_credit,
-                args=phone_number
+                args=[phone_number]
             )
             thread.start()
             threads.append(thread)
