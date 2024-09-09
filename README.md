@@ -1,5 +1,5 @@
 # Introduzione
-- Questo custom component permette di recuperare le seguenti informazioni realtive alla scheda SIM dell'operatore <code>ho-mobile</code>: 
+- Questo custom component permette di recuperare le seguenti informazioni relative alla scheda SIM dell'operatore <code>ho-mobile</code>: 
   - numero di GB (internet/dati) rimanenti; 
   - numero di GB totali previsti dal piano;
   - data del successivo rinnovo.
@@ -36,7 +36,7 @@ ho_mobile_account_phone_numbers:
 
 # Configurazione
 - Di default, viene eseguito un aggiornamento dei dati ogni 15 minuti
-- Si può personalizzare il periodo di aggiornamento dei dati, configurando il paramentro <code>scan_interval</code> espresso in secondi:
+- Si può personalizzare il periodo di aggiornamento dei dati, configurando il parametro <code>scan_interval</code> espresso in secondi:
 ```yaml
 ho_mobile_account:
   phone_numbers: !secret ho_mobile_account_phone_numbers
